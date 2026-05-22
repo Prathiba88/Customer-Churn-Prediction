@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+margin:0;
+font-family:'Poppins';
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+color:white;
+}
+
+.container{
+width:90%;
+max-width:1100px;
+margin:40px auto;
+background:#0f2027;
+background:linear-gradient(to right,#67235c,#6a1d3f,#5d691a);
+padding:20px;
+border-radius:20px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+th,td{
+padding:10px;
+border:1px solid #444;
+text-align:center;
+}
+
+button{
+padding:8px;
+border:none;
+border-radius:8px;
+background:#ff4d4d;
+color:white;
+cursor:pointer;
+}
+
+.chart-box{
+background:#0b0f12;
+padding:20px;
+border-radius:15px;
+margin-top:20px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:20px;
+margin-top:20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2><i class="fa fa-align-center" aria-hidden="true"></i> Admin Dashboard</h2>
+
+<h3>Users</h3>
+<table>
+<tr><th>ID</th><th>Name</th><th>Role</th><th>Action</th></tr>
+
+{% for u in users %}
+<tr>
+<td>{{u[0]}}</td>
+<td>{{u[1]}}</td>
+<td>{{u[2]}}</td>
+<td><a href="/delete/{{u[1]}}"><button>Delete</button></a></td>
+</tr>
+{% endfor %}
+
+</table>
+
+<p id="test">Chart loading...</p>
+
+<div class="chart-box">
+<h3>User Distribution</h3>
+<canvas id="chart" style="max-width:400px; max-height:400px; margin:auto;"></canvas>
+</div>
+
+<h3>Model Performance</h3>
+
+<p>Accuracy: {{acc}}%</p>
+<p>Precision: {{prec}}%</p>
+<p>Recall: {{rec}}%</p>
+<p>F1 Score: {{f1}}%</p>
+<div class="chart-box">
+<h3>Model Accuracy Comparison</h3>
+<div style="width:500px;height:300px;margin:auto;">
+<canvas id="modelChart"></canvas>
+</div>
+
+<h3>Confusion Matrix Dashboard</h3>
+
+<div class="grid">
+
+<div class="chart-box">
+<h4>Logistic Regression (Old Dataset)</h4>
+<div id="cm1"></div>
+</div>
+
+<div class="chart-box">
+<h4>Random Forest (Old Dataset)</h4>
+<div id="cm2"></div>
+</div>
+
+<div class="chart-box">
+<h4>Logistic Regression (Updated Dataset)</h4>
+<div id="cm3"></div>
+</div>
+
+<div class="chart-box">
+<h4>Random Forest (Updated Dataset)</h4>
+<div id="cm4"></div>
+</div>
+
+</div>
+
+<a href="/predict">
+<button style="margin-top:20px; width:150px;background:#746bed;">Back to Dashboard</button>
+</a>
+
+<a href="/logout">
+<button style="margin-top:10px; width:150px; background:#746bed;">Logout</button>
+</a>
+
+</div>
+
+<script>
+
+document.getElementById("test").innerText = "";
+
+let data = {{ chart_data | tojson }};
+let labels = data.map(x => x[0] || "Unknown");
+let values = data.map(x => x[1] || 0);
+
+new Chart(document.getElementById("chart"),{
+type:'pie',
+data:{
+labels:labels,
+datasets:[{
+data:values,
+backgroundColor:["#ff4d4d","#00d4ff"]
+}]
+},
+options:{
+responsive:true,
+maintainAspectRatio:false
+}
+});
+
+const cm1 = {{old_cm_log|tojson}};
+const cm2 = {{old_cm_rf|tojson}};
+const cm3 = {{new_cm_log|tojson}};
+const cm4 = {{new_cm_rf|tojson}};
+
+function drawMatrix(container,data){
+
+let html = `
+<table style="
+width:100%;
+border-collapse:collapse;
+text-align:center;
+font-size:18px;
+">
+
+<tr>
+<th></th>
+<th>Predicted No</th>
+<th>Predicted Yes</th>
+</tr>
+
+<tr>
+<th>Actual No</th>
+<td style="background:#00e5ff55;padding:15px;font-weight:bold">${data[0][0]}</td>
+<td style="background:#ff4d4d55;padding:15px;font-weight:bold">${data[0][1]}</td>
+</tr>
+
+<tr>
+<th>Actual Yes</th>
+<td style="background:#ff4d4d55;padding:15px;font-weight:bold">${data[1][0]}</td>
+<td style="background:#00e5ff55;padding:15px;font-weight:bold">${data[1][1]}</td>
+</tr>
+
+</table>
+`;
+
+document.getElementById(container).innerHTML = html;
+}
+
+drawMatrix("cm1",cm1);
+drawMatrix("cm2",cm2);
+drawMatrix("cm3",cm3);
+drawMatrix("cm4",cm4);
+const log_acc = {{log_acc}};
+const rf_acc = {{rf_acc}};
+
+new Chart(document.getElementById("modelChart"),{
+type:'bar',
+data:{
+labels:["Logistic Regression","Random Forest"],
+datasets:[{
+label:"Accuracy %",
+data:[log_acc,rf_acc],
+backgroundColor:["#ff4d4d","#00ff99"]
+}]
+},
+options:{
+responsive:true,
+maintainAspectRatio:false,
+scales:{
+y:{
+beginAtZero:true,
+max:100
+}
+}
+}
+});
+
+</script>
+
+</body>
+</html>

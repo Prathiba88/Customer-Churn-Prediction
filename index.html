@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Customer Churn Dashboard</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+<style>
+
+body{
+margin:0;
+font-family:'Poppins', sans-serif;
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+}
+
+.form-box{
+width:100%;
+max-width:400px;
+background:rgba(255,255,255,0.08);
+padding:25px;
+border-radius:20px;
+box-shadow:0 0 20px rgba(0,0,0,0.5);
+}
+
+.container{
+width:90%;
+max-width:1100px;
+margin:auto;
+background:rgba(40, 17, 101, 0.151);
+padding:20px;
+border-radius:20px;
+}
+
+input,select{
+width:100%;
+padding:10px;
+margin:8px 0;
+border-radius:10px;
+background:#23282b;
+color:rgb(194, 184, 184);
+border:none;
+}
+
+select option{color:rgb(243, 239, 239);}
+
+button{
+width:100%;
+padding:12px;
+margin-top:10px;
+border-radius:10px;
+border:none;
+background:linear-gradient(90deg,#00c6ff,#0072ff);
+color:rgb(252, 252, 252);
+cursor:pointer;
+}
+
+.tabs{
+display:flex;
+gap:10px;
+margin-top:15px;
+}
+
+.tabs button{
+flex:1;
+}
+
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:25px;
+margin-top:20px;
+}
+
+.chart-box{
+background:#0b0f12;
+padding:20px;
+border-radius:15px;
+height:260px;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+}
+
+</style>
+
+<script>
+function showTab(tab){
+document.getElementById("dashboard").style.display="none";
+document.getElementById(tab).style.display="block";
+}
+</script>
+
+</head>
+
+<body>
+
+{% if not result %}
+
+<div class="form-box">
+
+<h2 style="text-align:center;">Customer Churn Predictor</h2>
+
+<form method="POST">
+
+<input name="tenure" placeholder="Tenure" required>
+<input name="MonthlyCharges" placeholder="Monthly Charges" required>
+
+<select name="Contract">
+<option value="0">Month-to-Month</option>
+<option value="1">1 Year</option>
+<option value="2">2 Year</option>
+</select>
+
+<select name="InternetService">
+<option value="0">DSL(Basic Internet)</option>
+<option value="1">Fiber(High Speed)</option>
+<option value="2">No Internet</option>
+</select>
+
+<select name="SeniorCitizen">
+<option value="0">No(Younger Customer)</option>
+<option value="1">Yes(Senior Citizen)</option>
+</select>
+
+<select name="Partner">
+<option value="0">No(Single Customer)</option>
+<option value="1">Yes(Has Partner)</option>
+</select>
+
+<button>Predict</button>
+
+</form>
+
+</div>
+
+{% else %}
+
+<div class="container">
+
+<h2>Customer Churn Dashboard</h2>
+
+<h3>{{result.pred}}</h3>
+
+<h2 style="color:
+{% if result.prob > 70 %}
+#ff4d4d
+{% elif result.prob > 40 %}
+#ffa500
+{% else %}
+#00e5ff
+{% endif %}
+">
+Churn Risk: {{result.prob}}%
+</h2>
+
+<p style="font-size:16px">
+
+Customer Risk Level:
+
+{% if result.prob > 70 %}
+<span style="color:#ff4d4d;font-weight:bold;">High Risk</span><br>
+⚠ Customer likely to churn. Immediate retention action recommended.
+
+{% elif result.prob > 40 %}
+<span style="color:#ffa500;font-weight:bold;">Medium Risk</span><br>
+⚡ Customer shows moderate churn signals.
+
+{% else %}
+<span style="color:#00e5ff;font-weight:bold;">Low Risk</span><br>
+✅ Customer likely to stay.
+
+{% endif %}
+
+</p>
+<h3>Business Suggestions</h3>
+
+<ul>
+{% for s in result.suggestions %}
+<li>{{s}}</li>
+{% endfor %}
+</ul>
+
+
+<div id="dashboard">
+
+<div class="grid">
+
+<div class="chart-box">
+
+<canvas id="gauge"></canvas>
+
+<p style="text-align:center;margin-top:10px;font-size:14px;color:#b82020;">
+0-40% → Low Risk | 40-70% → Medium Risk | 70-100% → High Risk
+</p>
+
+</div>
+
+<div class="chart-box">
+<canvas id="risk"></canvas>
+</div>
+
+</div>
+
+<div class="chart-box">
+<canvas id="featureChart"></canvas>
+</div>
+
+</div>
+
+
+<a href="/"><button>New Prediction</button></a>
+<button onclick="printReport()">Download Report</button>
+
+<script>
+
+const prob={{result.prob|tojson}};
+Chart.register(ChartDataLabels);
+const featureNames={{feature_names|tojson}};
+const featureValues={{feature_values|tojson}};
+const gaugeChart = new Chart(document.getElementById("gauge"),{
+type:"doughnut",
+data:{
+labels:["Churn Risk","Safe"],
+datasets:[{
+data:[prob,100-prob],
+backgroundColor:["#ff4d4d","#00e5ff"]
+}]
+},
+options:{
+responsive:true,
+maintainAspectRatio:false,
+rotation:-90,
+circumference:180,
+plugins:{
+title:{
+display:true,
+text:"Churn Risk",
+color:"white",
+font:{size:18}
+},
+legend:{
+display:true,
+labels:{
+color:"#00CED1",
+font:{
+size:14
+}
+}
+}
+}
+}
+});
+const riskChart = new Chart(document.getElementById("risk"),{
+type:"bar",
+data:{
+labels:["Risk","Safe"],
+datasets:[{
+label:"Probability %",
+data:[prob,100-prob],
+backgroundColor:["#ff3b3b","#00ffff"],
+borderColor:["#ff0000","#00ffff"],
+}]
+},
+options:{
+responsive:true,
+maintainAspectRatio:false,
+plugins:{
+title:{
+display:true,
+text:"",
+color:"blue",
+font:{size:18}
+},
+legend:{
+display:true,
+labels:{
+color:"#00FFFF",
+font:{size:14}
+}
+},
+datalabels:{
+color:"#00CED1",
+anchor:"end",
+align:"top",
+formatter:(value)=> value + "%"
+}
+},
+scales:{
+x:{
+title:{
+display:true,
+text:"Category",
+color:"#00CED1",
+font:{size:16}
+},
+ticks:{color:"white"}
+},
+y:{
+title:{
+display:true,
+text:"Probability (%)",
+color:"#00CED1",
+font:{size:16}
+},
+ticks:{color:"#00CED1"}
+}
+}
+}
+});
+const featureChart = new Chart(document.getElementById("featureChart"),{
+type:"bar",
+data:{
+labels:featureNames,
+datasets:[{
+label:"Feature Importance",
+data:featureValues,
+backgroundColor:function(context){
+
+const chart = context.chart;
+const {ctx, chartArea} = chart;
+
+if (!chartArea) return null;
+
+const gradient = ctx.createLinearGradient(0,0,chartArea.width,0);
+
+gradient.addColorStop(0,"#a6e7ff");   // light blue
+gradient.addColorStop(1,"#001f54");   // navy blue
+
+return gradient;
+
+},
+borderColor:"#00ffff",
+borderWidth:2
+}]
+},
+options:{
+responsive:true,
+maintainAspectRatio:false,
+indexAxis:"y",
+plugins:{
+legend:{
+display:true,
+labels:{
+color:"#00CED1",
+font:{size:14}
+}
+},
+title:{
+display:true,
+text:" ",
+color:"#00CED1",
+font:{size:18}
+},
+datalabels:{
+color:"#00CED1",
+anchor:"end",
+align:"right",
+formatter:(value)=> value.toFixed(2)
+}
+},
+scales:{
+x:{
+title:{
+display:true,
+text:"Importance Score",
+color:"#00CED1",
+font:{size:16}
+},
+ticks:{color:"white"}
+},
+y:{
+title:{
+display:true,
+text:"Features",
+color:"#00CED1",
+font:{size:16}
+},
+ticks:{color:"#00CED1"}
+}
+}
+}
+});
+
+function printReport(){
+riskChart.options.scales.x.ticks.color = "#00FFFF";
+riskChart.options.scales.y.ticks.color = "#00FFFF";
+riskChart.options.scales.x.title.color = "#00FFFF";
+riskChart.options.scales.y.title.color = "#00FFFF";
+
+featureChart.options.scales.x.ticks.color = "#00FFFF";
+featureChart.options.scales.y.ticks.color = "#00FFFF";
+featureChart.options.scales.x.title.color = "#00FFFF";
+featureChart.options.scales.y.title.color = "#00FFFF";
+gaugeChart.update();
+riskChart.update();
+featureChart.update();
+let gauge = gaugeChart.toBase64Image();
+let risk = riskChart.toBase64Image();
+let feature = featureChart.toBase64Image();
+let report = `
+<html>
+<head>
+<title>Customer Churn Report</title>
+
+<style>
+body{
+font-family:Poppins;
+padding:40px;
+background:white;
+color:black;
+}
+
+h1{
+text-align:center;
+}
+
+.chart{
+width:350px;
+height:220px;
+display:block;
+margin:15px auto;
+object-fit:contain;
+border:1px solid #ddd;
+padding:5px;
+}
+
+ul{
+margin-bottom:30px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Customer Churn Prediction Report</h1>
+
+<h2>Prediction</h2>
+<p>{{result.pred}} ({{result.prob}}%)</p>
+
+<h2>Risk Level</h2>
+<p>
+{% if result.prob > 70 %}
+High Risk
+{% elif result.prob > 40 %}
+Medium Risk
+{% else %}
+Low Risk
+{% endif %}
+</p>
+
+<h2>Business Suggestions</h2>
+<ul>
+{% for s in result.suggestions %}
+<li>{{s}}</li>
+{% endfor %}
+</ul>
+
+<h2>Charts</h2>
+
+<h3>Churn Risk Gauge</h3>
+<img class="chart" src="${gauge}">
+<p style="text-align:center;font-size:14px;color:#444;">
+0-40% → Low Risk | 40-70% → Medium Risk | 70-100% → High Risk
+</p>
+<h3>Risk Comparison</h3>
+<img class="chart" src="${risk}">
+
+<h3>Feature Importance</h3>
+<img class="chart" src="${feature}">
+
+</body>
+</html>
+`;
+
+let win = window.open("");
+win.document.open();
+win.document.write(report);
+win.document.close();
+
+setTimeout(function(){
+win.print();
+},500);
+
+}
+
+</script>
+
+</div>
+
+{% endif %}
+
+</body>
+</html>

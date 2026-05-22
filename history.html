@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>My History</title>
+
+<style>
+body{
+margin:0;
+font-family:'Poppins';
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+color:white;
+}
+
+.container{
+width:90%;
+max-width:900px;
+margin:40px auto;
+background:rgba(255,255,255,0.05);
+padding:20px;
+border-radius:20px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+th,td{
+padding:10px;
+border:1px solid #444;
+text-align:center;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>📊 My Predictions</h2>
+
+<table>
+<tr>
+<th>Tenure</th><th>Monthly</th><th>Result</th><th>Probability</th>
+</tr>
+
+{% for d in data %}
+<tr>
+<td>{{d[2]}}</td>
+<td>{{d[3]}}</td>
+<td>{{d[8]}}</td>
+<td>{{d[9]}}%</td>
+</tr>
+{% endfor %}
+
+</table>
+
+</div>
+
+</body>
+</html>

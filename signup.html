@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Signup</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+body{
+margin:0;
+font-family:'Poppins', sans-serif;
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+color:white;
+}
+
+.card{
+background:rgba(255,255,255,0.08);
+padding:30px;
+border-radius:20px;
+width:320px;
+box-shadow:0 0 20px rgba(0,0,0,0.5);
+text-align:center;
+}
+
+input,select{
+width:100%;
+padding:10px;
+margin:10px 0;
+border-radius:10px;
+border:none;
+background:#1e2a30;
+color:white;
+}
+
+select option{color:black;}
+
+button{
+width:100%;
+padding:10px;
+border:none;
+border-radius:10px;
+background:linear-gradient(90deg,#00c6ff,#0072ff);
+color:white;
+cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h2>📝 Signup</h2>
+
+<form action="/signup" method="POST">
+<input name="username" placeholder="Username" required>
+<input
+type="password"
+name="password"
+placeholder="Password"
+required
+pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}"
+title="Password must contain 8 characters, one uppercase, one lowercase and one number">
+
+
+<button type="submit">Register</button>
+</form>
+
+</div>
+
+</body>
+</html>
